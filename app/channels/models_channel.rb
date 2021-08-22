@@ -1,21 +1,12 @@
 # Rails currently doesn't allow namespacing channels in an engine
 # module ActiveSync
-  class ActiveSyncChannel < ActionCable::Channel::Base
+  class ModelsChannel < ActionCable::Channel::Base
     # For providing DashData with data from rails models
     # To change the data sent (like reducing how much is sent)
     # implement broadcast_model in the respective modelc
 
     def subscribed
-
-      if filter && filter[:IsReference]
-
-        subscribe_references
-
-      else
-
-        subscribe_models
-
-      end
+      subscribe_models
     end
 
     def unsubscribed
@@ -40,45 +31,13 @@
       end
     end
 
-    def subscribe_references
-
-      record = subscription_model.find( filter[:record_id] )
-
-      if model_association
-
-        transmit( ActiveSync::Sync.association_record( model_association, record) )
-
-      else
-
-         raise "#{subscription_model} does not reference #{ filter[:association_name] }"
-
-      end
-
-      subscription_model.register_sync_subscription "#{subscription_model.name}_#{checksum}", filter.merge( subscribed_model: subscription_model )
-      eval( model_association[:class] ).register_sync_subscription "#{subscription_model.name}_#{checksum}", filter.merge( subscribed_model: subscription_model )
-      stream_from "#{subscription_model.name}_#{checksum}"
-
-    end
-
     def subscription_model
-
-      if ActiveSync::Sync.is_sync_model?( params[:model] )
-
-        eval( params[:model] )
-
-      else
-
-        raise "Model parameter: #{params[:model]} is not a registered sync model"
-
-      end
+      model = params[:model].camelize.constantize
+      model.sync_model? ? model : raise "Model '#{params[:model]}' is not a registered sync model"
     end
 
     def model_association
       ActiveSync::Sync.get_model_association( subscription_model, filter[:association_name] )
-    end
-
-    def filter
-      params[:filter]
     end
 
     def checksum

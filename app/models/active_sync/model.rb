@@ -9,49 +9,22 @@ module ActiveSync
       @@sync_record_subscriptions = {}
     end
 
-    def sync_update
-      sync_change if saved_changes?
+    def sync_change
+      if sync_model?
+        BroadcastChangeJob.perform_later(self)
+      end
     end
 
-    def sync_change
-      if ActiveSync::Sync.is_sync_model? self.class
-        ActionCable.server.broadcast("#{self.class}_All", ActiveSync::Sync.sync_record( self ) )
-        self.class.sync_record_subscriptions.each do | stream, filter |
-          unless filter[:IsReference]
-
-            match = true
-            filter.each do | key, value |
-              unless self.send( key ) == value
-                match = false
-                break
-              end
-            end
-
-            ActionCable.server.broadcast( stream, ActiveSync::Sync.sync_record( self ) ) if match
-
-          else
-
-            model_association = ActiveSync::Sync.get_model_association( filter[:subscribed_model], filter[:association_name] )
-
-            record = filter[:subscribed_model].find( filter[:record_id] )
-
-            if defined? record.send( model_association[:name] ).pluck
-
-              referenced = record.send( model_association[:name] ).pluck(:id).include? id
-            else
-              referenced = record.send( model_association[:name] ).id == id
-            end
-
-            if referenced
-              ActionCable.server.broadcast( stream, ActiveSync::Sync.association_record( model_association, record ))
-            end
-          end
-        end
-      end
+    def sync_model?
+      true
     end
 
 
     class_methods do
+
+      def sync_model?
+        true
+      end
 
       def register_sync_subscription stream, filter
         @@sync_record_subscriptions[ self.name ] = {} if @@sync_record_subscriptions[ self.name ].nil?
@@ -82,9 +55,7 @@ module ActiveSync
       # :associations - an array of symbols
 
       def sync *attributes
-
         ActiveSync::Sync.configure_model_description self, attributes
-
       end
 
       # Sync hash for all of self records

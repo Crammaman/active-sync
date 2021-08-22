@@ -4,10 +4,9 @@ module ActiveSync
     # Describes what of each model should be sent as the sync records,
     # this is populated through calls to 'sync' in the model class
     @@model_descriptions = {}
-    @@loaded = false
 
     def self.model_descriptions
-      ( Rails.application.eager_load! && @@loaded = true ) unless Rails.application.config.cache_classes || @@loaded
+      Rails.application.eager_load! if @@model_descriptions.blank?
       @@model_descriptions
     end
 
@@ -22,7 +21,7 @@ module ActiveSync
 
     #Hash used in all general sync communication for a given model.
     def self.sync_record record
-      @@model_descriptions[ record.class.name ][ :attributes ].reduce( {} ) do | hash, attribute |
+      model_descriptions[ record.class.name ][ :attributes ].reduce( {} ) do | hash, attribute |
         hash[ attribute ] = record.send( attribute )
         hash
       end
@@ -30,7 +29,7 @@ module ActiveSync
 
     def self.configure_model_description model, options
 
-      @@model_descriptions[ model.name ] = {
+      model_descriptions[ model.name ] = {
         attributes:   [],
         associations: []
       }
@@ -68,9 +67,7 @@ module ActiveSync
     end
 
     def self.add_attributes_to_description model, attributes
-
-      attributes.each{ |attribute| @@model_descriptions[ model.name ][ :attributes ] << attribute.to_s }
-
+      attributes.each{ |attribute| model_descriptions[ model.name ][ :attributes ] << attribute.to_s }
     end
 
     def self.add_associations_to_description model, association_names
@@ -80,19 +77,13 @@ module ActiveSync
 
         unless association.nil?
           begin
-
-            @@model_descriptions[ model.name ][ :associations ] << { name: association.name.to_s, class: association.class_name, type: association.association_class.name }
+            model_descriptions[ model.name ][ :associations ] << { name: association.name.to_s, class: association.class_name, type: association.association_class.name }
 
           rescue NotImplementedError
-
-            @@model_descriptions[ model.name ][ :associations ] << { name: association.name.to_s, class: association.class_name, type: 'ActiveRecord::Associations::HasManyThroughAssociation' }
-
+            model_descriptions[ model.name ][ :associations ] << { name: association.name.to_s, class: association.class_name, type: 'ActiveRecord::Associations::HasManyThroughAssociation' }
           end
-
         else
-
           throw "Association #{ association_name } not found for #{ model.name }"
-
         end
       end
     end
@@ -115,7 +106,7 @@ module ActiveSync
     end
 
     def self.get_model_association model, association_name
-      @@model_descriptions[ model.name ][:associations].find{ |a| a[:name] == association_name }
+      model_descriptions[ model.name ][:associations].find{ |a| a[:name] == association_name }
     end
 
     def self.first_key obj
