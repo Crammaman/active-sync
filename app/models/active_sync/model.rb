@@ -5,8 +5,6 @@ module ActiveSync
     included do
       # after_update :sync_update
       after_commit :sync_change
-
-      @@sync_record_subscriptions = {}
     end
 
     def sync_change
@@ -35,11 +33,15 @@ module ActiveSync
         @@sync_record_subscriptions[ self.name ] || {}
       end
 
-      # Sync configures the data that is used in general sync communication
+      # #sync sets the #sync_record method that renders the hash to create the JSON object that is broadcast and sets
+      # #sync_associations which returns a list of associations that are permitted to be broadcast for this model.
+      # define these methods directly in your model if the record sent to the font end needs to be different to what's
+      # available with the below configurations
+      #
       # This can be passed the following options:
       #
       # Example use in Model:
-      # sync :all_references, associations: [ :sites ]
+      # sync :all_attributes, associations: [ :sites ]
 
       # ATTRIBUTE OPTIONS
       # Attributes are data that is sent in the actual sync data (this will always include the ID)
@@ -48,27 +50,29 @@ module ActiveSync
       # :attributes - an array of symbols that will be called on the record and sent as attributes
 
       # ASSOCIATION OPTIONS
-      # Associations are lazy loaded, data will not go with the record but the front end will be told that
-      # there is an association to load the data of when accessed.
+      # Associations are lazy loaded, data will not go with the record but if the front end has the association described
+      # then records can be subscribed to through the association.
 
       # :all_associations - sync data will be associated
       # :associations - an array of symbols
 
       def sync *attributes
-        ActiveSync::Sync.configure_model_description self, attributes
+        define_method(:sync_record) do
+          ActiveSync::Sync.sync_record(self, attributes)
+        end
+        define_method(:sync_associations) do
+          ActiveSync::Sync.sync_associations(self, attributes)
+        end
       end
 
       # Sync hash for all of self records
       def sync_all
-
       	self.all.map do |record|
           ActiveSync::Sync.sync_record record
         end
-
       end
 
       def sync_filtered filter
-
         self.where( filter ).map do |record|
           ActiveSync::Sync.sync_record record
         end
