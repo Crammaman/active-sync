@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "actioncable": "^5.2.2-1",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "camelcase": "^5.2.0",
     "pluralize": "^8.0.0",
     "snake-case": "^2.1.0"
