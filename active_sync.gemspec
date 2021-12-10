@@ -21,4 +21,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "webpacker", ">= 3.5.5"
   s.add_development_dependency "sqlite3", "~> 1.4"
   s.add_development_dependency "foreman"
+  s.add_development_dependency "puma"
 end
