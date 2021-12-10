@@ -1,16 +1,22 @@
 module ActiveSync
   class ModelsController < ApplicationController
 
-    def index
-      render json: model.sync_filtered(properties)
+    def update
+      #TODO some oversite on what can be edited for sync records
+      model.find(params[:id]).update(params.permit(model.sync_attributes))
+      head :no_content
     end
 
-    def properties
-      params.permit(ActiveSync::Sync.model_descriptions[model.name][:attributes])
+    def create
+      #TODO some oversite on what can be created for sync records
+      render json: model.create(params.permit(model.sync_attributes)).id
     end
 
+    private
     def model
-      params[:model].singularize.camelize.safe_constantize || params[:model].camelize.safe_constantize
+      m = params[:model].singularize.camelize.safe_constantize || params[:model].camelize.safe_constantize
+      raise "Cannot edit #{params[:model]} as it is not a sync model" unless m.sync_model?
+      m
     end
   end
 end

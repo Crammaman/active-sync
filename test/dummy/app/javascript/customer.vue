@@ -1,6 +1,7 @@
 <template>
 <div>
-  <p @click="toggle">{{ customer.name }}</p>
+  <p v-if="!editing" @click="toggleSites">{{ customer.name }} <a href="#" @click="toggleEditing">edit</a></p>
+  <p v-else ><input v-model="customer.name" /> <a href="#" @click="saveCustomer">save</a></p>
   <div  v-if="expanded">
     <site v-for="site in sites" :key="'site'+site.id" :site="site"></site>
   </div>
@@ -14,13 +15,21 @@ export default{
   data() {
     return {
       sites: [],
+      editing: false,
       expanded: false
     }
   },
   methods: {
-    toggle(){
+    toggleSites(){
       this.expanded = !this.expanded
-      this.sites = this.customer.sites().then((sites) => this.sites = sites)
+      this.customer.sites().then((sites) => this.sites = sites)
+    },
+    toggleEditing(){
+      this.editing = !this.editing
+    },
+    saveCustomer(){
+      this.$Customer.update(this.customer)
+      this.editing = !this.editing
     }
   },
   components:{

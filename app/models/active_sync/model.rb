@@ -24,15 +24,6 @@ module ActiveSync
         true
       end
 
-      def register_sync_subscription stream, filter
-        @@sync_record_subscriptions[ self.name ] = {} if @@sync_record_subscriptions[ self.name ].nil?
-        @@sync_record_subscriptions[ self.name ][ stream ] = filter
-      end
-
-      def sync_record_subscriptions
-        @@sync_record_subscriptions[ self.name ] || {}
-      end
-
       # #sync sets the #sync_record method that renders the hash to create the JSON object that is broadcast and sets
       # #sync_associations which returns a list of associations that are permitted to be broadcast for this model.
       # define these methods directly in your model if the record sent to the font end needs to be different to what's
@@ -57,24 +48,14 @@ module ActiveSync
       # :associations - an array of symbols
 
       def sync *attributes
+        self.class.define_method(:sync_attributes) do
+          ActiveSync::Sync.sync_attributes(self, attributes)
+        end
         define_method(:sync_record) do
           ActiveSync::Sync.sync_record(self, attributes)
         end
         define_method(:sync_associations) do
           ActiveSync::Sync.sync_associations(self, attributes)
-        end
-      end
-
-      # Sync hash for all of self records
-      def sync_all
-      	self.all.map do |record|
-          ActiveSync::Sync.sync_record record
-        end
-      end
-
-      def sync_filtered filter
-        self.where( filter ).map do |record|
-          ActiveSync::Sync.sync_record record
         end
       end
     end

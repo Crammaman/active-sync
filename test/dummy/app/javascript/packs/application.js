@@ -6,7 +6,7 @@ let activeSync = new ActiveSync({ modelDescriptions: {
   Customer: { hasMany: ['sites']}, Site: { belongsTo: ['customer']}
 }})
 
-Vue.use( activeSync )
+Vue.use(activeSync)
 
 document.addEventListener("DOMContentLoaded", e => {
   const app = new Vue({
