@@ -1,7 +1,7 @@
 # ActiveSync
 Dynamically created and updated front end models. 
 
-Active record adds an active record interface to your front end. Configured models are available 
+Active sync adds a limited active record like interface to your front end. Configured models are available 
 within your Javascript application with many active record type functions such as 'where'.
 
 Records are lazy loaded and then dynamically updated through actioncable. So any records looked up
